@@ -58,20 +58,20 @@ Process::Process(vector <string> proc, int prio){
 //    return pcb;
    
 // }
-vector <Process*> event_Q; 
-void put_event(Process *arrived_event){
-    int flag = 0; 
-    for (int i = 0; i < event_Q.size(); i++){
-        if (time_stamp - event_Q.at(i) -> FT > time_stamp - arrived_event -> FT ){
-            event_Q.insert(event_Q.begin() + i , arrived_event);
-            flag = 1;
+
+// void put_event(Process *arrived_event){
+//     int flag = 0; 
+//     for (int i = 0; i < event_Q.size(); i++){
+//         if (time_stamp - event_Q.at(i) -> FT > time_stamp - arrived_event -> FT ){
+//             event_Q.insert(event_Q.begin() + i , arrived_event);
+//             flag = 1;
             
-        }
-    }
-    if (flag == 0){
-        event_Q.push_back(arrived_event);
-    }
-}
+//         }
+//     }
+//     if (flag == 0){
+//         event_Q.push_back(arrived_event);
+//     }
+// }
 char* getCmdOption(char ** begin, char ** end, const std::string & option)
 {
     char ** itr = std::find(begin, end, option);
@@ -86,6 +86,27 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option)
 {
     return std::find(begin, end, option) != end;
 }
+class Event
+{
+private:
+    /* data */
+public:
+    int old_state;
+    int new_state;
+    int current_time;
+    Process* p;
+    Event(/* args */);
+    ~Event();
+};
+
+Event::Event(/* args */)
+{
+}
+
+Event::~Event()
+{
+}
+
 
 int main(int argc, char** argv){
     //reading input file into a vector
@@ -100,6 +121,8 @@ int main(int argc, char** argv){
     int len = str.size();
     vector <string> temp;
     vector < vector <string > > event;
+    vector <Process> create;
+    vector <Process> event_Q; 
    
     int count = 0;
     char * priority;
@@ -148,24 +171,22 @@ int main(int argc, char** argv){
         pcb.CW = 0;
         pcb.IT = 0;
         pcb.TT = 0; 
-        Process* pcb_pointer = & pcb;
-        process_Q.push(pcb_pointer);
-        event_Q.push_back(&pcb);
-    }
-    for (int i = 0; i < event_Q.size(); i++){
-        cout<< "process " << i << ":"<< event_Q.at(i) -> AT << endl;
+        create.push_back(pcb);
     }
 
     typedef enum { READY, RUNNING , BLOCKED } process_state;
-    //int num = event.size() - 1;
-    time_stamp = stoi(event.at(0).at(0));
-    time_stamp = 510; 
-    Process *temp1 = event_Q.at(0);
-    cout << "temp1" <<  temp1 -> AT << endl;
-    //cout<< "event_Q.size: "<<event_Q.size()<< endl;
-    event_Q.erase(event_Q.begin());
-    put_event(temp1);
-    //cout<< "event_Q.size: "<<event_Q.size()<< endl;
+    while (!create.empty()){
+        if (time_stamp >= create.at(0).AT){
+           event_Q.push_back(create.at(0));
+           create.erase(create.begin());
+           time_stamp = 500; 
+        }
+    }
+    for(int i = 0; i < event_Q.size(); i++){
+        cout<< event_Q.at(i).AT<< endl;
+    }
+   
+
     
     return 0;
 }
