@@ -308,15 +308,12 @@ void simulation(Scheduler scheduler){
                         if (doneQ.at(i) -> pid > proc -> pid ){
                             doneQ.insert(doneQ.begin() + i, proc);
                             flag = 1;
-                            cout << "proc -> AT: " << proc -> AT << endl;
-                            cout << "doneQ -> AT: " << doneQ.at(i) -> AT << endl;
+                            
                             break;
                         }
                     }
                     if (flag == 0){
                         doneQ.push_back(proc);
-                        cout << "proc -> AT: " << proc -> AT << endl;
-                        cout << "doneQ -> AT: " << doneQ.at(doneQ.size() - 1) -> AT << endl;
                     }
                     // cout<< proc -> pid << ":\t" << proc -> AT << " " <<  proc -> TC << " "<< proc -> CB << " "<< proc -> IO << " "<< proc -> PRIO<< " | ";
                     // cout << proc -> FT<< " " << proc -> TT<< " " <<proc -> IT<< " " << proc -> CW << " "<<endl;
@@ -448,7 +445,7 @@ int main(int argc, char** argv){
     int len = str.size();
     vector <string> temp;
     vector < vector <string > > event;
-    vector <Process> create;
+    vector <Process*> create;
 
     
    
@@ -502,20 +499,42 @@ int main(int argc, char** argv){
     //     }
     //     cout<< endl;
     // }
+
+
+    //******************************************************** original
+    // for (int i = 0; i < event.size(); i++){
+        
+    //     Process pcb (event.at(i), max_prio);
+    //     pcb.FT = 0; 
+    //     pcb.CW = 0;
+    //     pcb.IT = 0;
+    //     pcb.TT = 0; 
+    //     pcb.set_quantum(10000);
+    //     pcb.pid = i;
+    //     pcb.proc_time_stamp = pcb.AT;
+    //     create.push_back(pcb);
+    // }
+    //************************************************************
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++trying dynamic allocation
     for (int i = 0; i < event.size(); i++){
-        Process pcb (event.at(i), max_prio);
-        pcb.FT = 0; 
-        pcb.CW = 0;
-        pcb.IT = 0;
-        pcb.TT = 0; 
-        pcb.set_quantum(10000);
-        pcb.pid = i;
-        pcb.proc_time_stamp = pcb.AT;
-        create.push_back(pcb);
+        Process *pcb;
+        pcb =  new Process(event.at(i), max_prio);
+        pcb -> FT = 0; 
+        pcb -> CW = 0;
+        pcb -> IT = 0;
+        pcb -> TT = 0; 
+        pcb -> set_quantum(10000);
+        pcb -> pid = i;
+        pcb -> proc_time_stamp = pcb -> AT;
+        //create.push_back(*pcb);
+        Event eve(pcb, READY);
+        eve.event_time_stamp = pcb -> AT;
+        event_Q.push_back(eve);
     }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //create_to_ready(create);
     //current_time = 500;
-    create_to_ready(create);
+    //create_to_ready(create);
     // for(int i = 0; i < create.size(); i++){
     //     cout<< create.at(i).pid<< ": "<<create.at(i).AT<<  endl;
     // }
