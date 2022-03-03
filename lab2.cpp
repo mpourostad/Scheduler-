@@ -203,17 +203,39 @@ void put_event(Event event){
 
 void print_doneQ(vector <Process*> doneQ){
     for(int i = 0; i < doneQ.size(); i++){
-        cout<< doneQ.at(i) -> pid << ":    " << doneQ.at(i) -> AT << "   " <<  doneQ.at(i) -> TC << "   "<< doneQ.at(i) -> CB << "   "<< doneQ.at(i) -> IO << "   "<< doneQ.at(i) -> PRIO<< " |  ";
-        cout << doneQ.at(i) -> FT<< "  " << doneQ.at(i) -> TT<< "  " <<doneQ.at(i) -> IT<< "  " << doneQ.at(i) -> CW <<endl;
+        printf("%04d: %4d %4d %4d %4d %1d | %5d %5d %5d %5d\n", doneQ.at(i) -> pid, doneQ.at(i) -> AT,  doneQ.at(i) -> TC, doneQ.at(i) -> CB, doneQ.at(i) -> IO, 
+                      doneQ.at(i) -> PRIO, doneQ.at(i) -> FT, doneQ.at(i) -> TT, doneQ.at(i) -> IT,  doneQ.at(i) -> CW);
     }
 }
-void simulation(Scheduler scheduler){
+void print_stats(vector<Process*> done, int last_event){
+    //int cpu_sum;
+    double it_sum;
+    double turnaround_sum;
+    double cpu_waiting_sum;
+
+    for (int i = 0; i < done.size(); i++){
+        it_sum += (double)done.at(i) -> IT;
+        turnaround_sum += (double)done.at(i) -> TT;
+        cpu_waiting_sum += (double) done.at(i) -> CW;
+    }
+    double cpu_util = (turnaround_sum - cpu_waiting_sum - it_sum) / (double)last_event;
+    double io_util = 0.0;
+    double turnaround_mean = turnaround_sum / (double)done.size();
+    double cpu_waiting_mean = cpu_waiting_sum / (double)done.size();
+    double throughput = (double)done.size()/ (double)last_event;
+    
+    
+
+
+     printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", last_event, 100.0 * cpu_util, 100.0 * io_util, turnaround_mean, cpu_waiting_mean, 100.0 * throughput); 
+}
+void simulation(Scheduler scheduler, int process_number){
     vector <Process*> doneQ;
     Event evt = get_event();
     bool CALL_SCHEDULER = false;
     Process* current_running_process = nullptr;
     Process* process_blocked = nullptr;
-    int CW_duration;
+    int last_event;
     
     while(event_Q.size() >= 0){
         //cout<< "this" << endl;
@@ -234,8 +256,7 @@ void simulation(Scheduler scheduler){
             proc -> proc_time_stamp = current_time;
             //cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             //cout <<"runQ: " << scheduler.run_Q.front() ->pid<< endl; 
-            if (current_running_process == nullptr){
-                CW_duration = 0; 
+            if (current_running_process == nullptr){ 
                 CALL_SCHEDULER = true;
             }
         
@@ -254,7 +275,6 @@ void simulation(Scheduler scheduler){
             int cpu_burst = myrandom(proc -> CB);
             proc -> set_CW(timeInPrevState);
             proc -> proc_time_stamp = current_time;
-            //CW_duration += cpu_burst;
             
            
             //cout << "cpu_burst " << cpu_burst<< endl;
@@ -265,12 +285,7 @@ void simulation(Scheduler scheduler){
                
                 // cout << "time: "<< current_time << " pcb: " << proc -> pid<< "pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder << endl;
                 proc -> set_remainder(cpu_burst);
-                
-                
-
                 if (proc ->  remainder ==  0){
-
-
                     //cout<< "CALL_SCHEDULER " << CALL_SCHEDULER << endl;
                     // cout<< "event_Q.size " <<  event_Q.size() << endl;
                     //int flag = 0;
@@ -327,13 +342,18 @@ void simulation(Scheduler scheduler){
         }
         case DONE:
         {
-            int flag = 0; 
+            int flag = 0;
+            //cout << "doneQ.size() " << doneQ.size() << endl;
+            if (doneQ.size() == process_number - 1){
+                last_event = proc-> FT;
+                //cout << "last_event " << last_event << endl;
+            }
             for (int i = 0; i < doneQ.size(); i++){
-                        //cout << "pid " << proc -> pid << endl;
+                
+                //cout << "pid " << proc -> pid << endl;
                 if (doneQ.at(i) -> pid > proc -> pid ){
                     doneQ.insert(doneQ.begin() + i, proc);
-                    flag = 1;
-                    
+                    flag = 1;                    
                     break;
                 }
             }
@@ -385,19 +405,16 @@ void simulation(Scheduler scheduler){
         }
         if (!event_Q.empty()){
             evt = get_event();
-            // cout << "event_size: " << event_Q.size() << endl;
-            // cout<< "sth";
             //cout <<"next_event " << evt.evtproc -> pid << " transition " << evt.transition << endl;
         }
     
         
     }
     print_doneQ(doneQ);
+    print_stats(doneQ, last_event);
 }
 int main(int argc, char** argv){
  
-
-
     queue<Process*> process_Q; 
     ifstream f;
     vector<string>  str; 
@@ -495,7 +512,7 @@ int main(int argc, char** argv){
     // }
     Scheduler test;
     current_time = 0; 
-    simulation(test);
+    simulation(test, event.size());
     
     
     return 0;
