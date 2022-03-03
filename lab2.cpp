@@ -173,18 +173,12 @@ bool contains(int i){
     }
     return false;
 }
+// unused function
 void create_to_ready( vector <Process> create){
     for (int i = 0; i < create.size();  i++){
-        //if (current_time >= create.at(i).AT && !contains(create.at(i).pid) ){
-        //event_Q.push_back(create.at(0));
             Event eve(&create.at(i), READY);
             eve.event_time_stamp = create.at(i).AT;
-            // cout << "create_AT " << i << " : " << create.at(i).AT << " ";
-            // cout << "event_time_stamp " << i << " : " << eve.evtproc -> AT << endl;
-
-            //create.erase(create.begin()); 
             event_Q.push_back(eve);
-        //}
     }
 }
 Event get_event(){
@@ -206,31 +200,11 @@ void put_event(Event event){
         event_Q.push_back(event);
     }
 }
-// vector <Process*> doneQ;
-// void insert_doneQ(Process *proc){
-//     int flag = 0;
-//     //cout << "pid" << proc -> pid << endl;
-//     // if (doneQ.empty()){
-//     //     doneQ.push_back(proc);
-//     //     flag = 1; 
-//     // }
-//     else{
-//         for (int i = 0; i < doneQ.size(); i++){
-            
-//             if (doneQ.at(i) -> pid > proc -> pid ){
-//                 doneQ.insert(doneQ.begin() + i, proc);
-//                 flag = 1;
-//             }
-//         }
-//     }
-//     if (flag == 0){
-//         doneQ.push_back(proc);
-//     }
-// }
+
 void print_doneQ(vector <Process*> doneQ){
     for(int i = 0; i < doneQ.size(); i++){
-        cout<< doneQ.at(i) -> pid << ":\t" << doneQ.at(i) -> AT << " " <<  doneQ.at(i) -> TC << " "<< doneQ.at(i) -> CB << " "<< doneQ.at(i) -> IO << " "<< doneQ.at(i) -> PRIO<< " | ";
-        cout << doneQ.at(i) -> FT<< " " << doneQ.at(i) -> TT<< " " <<doneQ.at(i) -> IT<< " " << doneQ.at(i) -> CW << " "<<endl;
+        cout<< doneQ.at(i) -> pid << ":    " << doneQ.at(i) -> AT << "   " <<  doneQ.at(i) -> TC << "   "<< doneQ.at(i) -> CB << "   "<< doneQ.at(i) -> IO << "   "<< doneQ.at(i) -> PRIO<< " |  ";
+        cout << doneQ.at(i) -> FT<< "  " << doneQ.at(i) -> TT<< "  " <<doneQ.at(i) -> IT<< "  " << doneQ.at(i) -> CW <<endl;
     }
 }
 void simulation(Scheduler scheduler){
@@ -258,7 +232,7 @@ void simulation(Scheduler scheduler){
             // conditional on whether something is run
             scheduler.add_process(proc);
             proc -> proc_time_stamp = current_time;
-            cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
+            //cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             //cout <<"runQ: " << scheduler.run_Q.front() ->pid<< endl; 
             if (current_running_process == nullptr){
                 CW_duration = 0; 
@@ -289,37 +263,25 @@ void simulation(Scheduler scheduler){
             }
             if (proc -> quantum > cpu_burst){
                
-                cout << "time: "<< current_time << " pcb: " << proc -> pid<< "pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder << endl;
+                // cout << "time: "<< current_time << " pcb: " << proc -> pid<< "pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder << endl;
                 proc -> set_remainder(cpu_burst);
                 
                 
 
                 if (proc ->  remainder ==  0){
 
+
                     //cout<< "CALL_SCHEDULER " << CALL_SCHEDULER << endl;
                     // cout<< "event_Q.size " <<  event_Q.size() << endl;
-                    int flag = 0;
+                    //int flag = 0;
                     proc -> set_state(DONE);
                     proc -> set_FT();
                     proc -> set_TT();
+                    Event new_event(proc, DONE);
+                    new_event.event_time_stamp = current_time + cpu_burst;
+                    put_event(new_event);
                     //insert_doneQ(proc);
-                    for (int i = 0; i < doneQ.size(); i++){
-                        //cout << "pid " << proc -> pid << endl;
-
-                        if (doneQ.at(i) -> pid > proc -> pid ){
-                            doneQ.insert(doneQ.begin() + i, proc);
-                            flag = 1;
-                            
-                            break;
-                        }
-                    }
-                    if (flag == 0){
-                        doneQ.push_back(proc);
-                    }
-                    current_time = current_time + cpu_burst;
-                    current_running_process = nullptr;
-                    CALL_SCHEDULER = true;
-                }
+                }   
                 
                 else{                  
                     Event new_event(proc, BLOCK);
@@ -348,7 +310,7 @@ void simulation(Scheduler scheduler){
             new_event.old_state = BLOCK;
             put_event(new_event);
             
-            cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
+            // cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
             // cout << "that" << endl;
             //cout<< "that " << endl;
 
@@ -360,6 +322,25 @@ void simulation(Scheduler scheduler){
         // add to runqueue (no event is generated)
             scheduler.add_process(proc);
             proc -> proc_time_stamp = current_time;
+            CALL_SCHEDULER = true;
+            break;
+        }
+        case DONE:
+        {
+            int flag = 0; 
+            for (int i = 0; i < doneQ.size(); i++){
+                        //cout << "pid " << proc -> pid << endl;
+                if (doneQ.at(i) -> pid > proc -> pid ){
+                    doneQ.insert(doneQ.begin() + i, proc);
+                    flag = 1;
+                    
+                    break;
+                }
+            }
+            if (flag == 0){
+                doneQ.push_back(proc);
+            }
+            current_running_process = nullptr;
             CALL_SCHEDULER = true;
             break;
         }
@@ -389,9 +370,8 @@ void simulation(Scheduler scheduler){
                     }
                     continue;
                 }
-                cout<< "next process: "<<current_running_process -> pid << endl;
+                // cout<< "next process: "<<current_running_process -> pid << endl;
                 Event new_event(current_running_process, RUNNING);
-                cout << "time in pre state " << timeInPrevState << endl;
                 //cout << "event_Q size " << event_Q.size()<< endl;
                 new_event.event_time_stamp = current_time;
                 put_event(new_event);
@@ -415,19 +395,7 @@ void simulation(Scheduler scheduler){
     print_doneQ(doneQ);
 }
 int main(int argc, char** argv){
-    //reading input file into a vector
-    // queue<Process*> process_Q; 
-    // ifstream f;
-    // vector<string> str; 
-    // string filename_input = argv[1];
-    // f.open(filename_input);
-    // copy(istream_iterator<string>(f),
-    // istream_iterator<string>(),
-    // back_inserter(str));
-    // int len = str.size();
-    // vector <string> temp;
-    // vector < vector <string > > event;
-    // vector <Process> create;
+ 
 
 
     queue<Process*> process_Q; 
@@ -446,10 +414,6 @@ int main(int argc, char** argv){
     int count = 0;
     char * priority;
     int max_prio;
-
-    // for (int i = 0; i < str.size(); i++){
-    //     cout<< str.at(i) << " ";
-    // }
 
     ifstream r;
     string filename_rand = argv[2];
@@ -487,12 +451,6 @@ int main(int argc, char** argv){
             temp.clear();
         }       
     }
-    // for (int i = 0; i < event.size(); i++){
-    //     for (int j = 0; j < event.at(i).size(); j++){
-    //         cout<< event.at(i).at(j)<< " ";
-    //     }
-    //     cout<< endl;
-    // }
 
 
     //******************************************************** original
@@ -538,10 +496,6 @@ int main(int argc, char** argv){
     Scheduler test;
     current_time = 0; 
     simulation(test);
-    // for(int i = 0; i < doneQ.size(); i++){
-    //     cout<< "pid" <<  doneQ.at(i) -> pid<<  endl;
-    // }
-    //print_doneQ();
     
     
     return 0;
