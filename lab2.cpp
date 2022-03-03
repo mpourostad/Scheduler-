@@ -239,6 +239,7 @@ void simulation(Scheduler scheduler){
     bool CALL_SCHEDULER = false;
     Process* current_running_process = nullptr;
     Process* process_blocked = nullptr;
+    int CW_duration;
     
     while(event_Q.size() >= 0){
         //cout<< "this" << endl;
@@ -255,16 +256,12 @@ void simulation(Scheduler scheduler){
             // must come from BLOCKED or from PREEMPTION
             // must add to run queue
             // conditional on whether something is run
-            //cout <<"pid: " <<evt.evtproc ->pid;
-            // if (process_blocked == proc) {
-			// 	process_blocked = nullptr;
-			// }
             scheduler.add_process(proc);
             proc -> proc_time_stamp = current_time;
+            cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             //cout <<"runQ: " << scheduler.run_Q.front() ->pid<< endl; 
             if (current_running_process == nullptr){
-                //cout<< "this" << endl;
-                //cout<< "test" << endl;
+                CW_duration = 0; 
                 CALL_SCHEDULER = true;
             }
         
@@ -279,16 +276,20 @@ void simulation(Scheduler scheduler){
             //current_running_process = proc;
             //cout << (current_running_process == nullptr) << endl;
             //cout <<   proc -> pid;
+            
             int cpu_burst = myrandom(proc -> CB);
             proc -> set_CW(timeInPrevState);
+            proc -> proc_time_stamp = current_time;
+            //CW_duration += cpu_burst;
+            
+           
             //cout << "cpu_burst " << cpu_burst<< endl;
             if (cpu_burst > proc -> remainder){
-                //cout << "that ";
                 cpu_burst = proc -> remainder;
             }
             if (proc -> quantum > cpu_burst){
-                //cout << "thiiiiiiis";
-                //cout << "pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder;
+               
+                cout << "time: "<< current_time << " pcb: " << proc -> pid<< "pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder << endl;
                 proc -> set_remainder(cpu_burst);
                 
                 
@@ -315,21 +316,17 @@ void simulation(Scheduler scheduler){
                     if (flag == 0){
                         doneQ.push_back(proc);
                     }
-                    // cout<< proc -> pid << ":\t" << proc -> AT << " " <<  proc -> TC << " "<< proc -> CB << " "<< proc -> IO << " "<< proc -> PRIO<< " | ";
-                    // cout << proc -> FT<< " " << proc -> TT<< " " <<proc -> IT<< " " << proc -> CW << " "<<endl;
-
+                    current_time = current_time + cpu_burst;
                     current_running_process = nullptr;
-
-                    
-
+                    CALL_SCHEDULER = true;
                 }
-                else{
-                    
-                    
+                
+                else{                  
                     Event new_event(proc, BLOCK);
                     new_event.event_time_stamp = current_time + cpu_burst;
                     //proc -> proc_time_stamp = new_event.event_time_stamp;
                     put_event(new_event);
+                    
                 }
                 
             }
@@ -342,6 +339,7 @@ void simulation(Scheduler scheduler){
             current_running_process = nullptr;
             int IO_burst = myrandom(proc -> IO);
             proc -> set_IT(IO_burst);
+            proc -> proc_time_stamp = current_time;
             
             Event new_event(proc, READY);
             //cout << "io burst " << IO_burst << endl;
@@ -350,7 +348,7 @@ void simulation(Scheduler scheduler){
             new_event.old_state = BLOCK;
             put_event(new_event);
             
-            // cout <<  " Running -> Block ib " << IO_burst << " rem " << proc->remainder<< " ";
+            cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
             // cout << "that" << endl;
             //cout<< "that " << endl;
 
@@ -361,6 +359,7 @@ void simulation(Scheduler scheduler){
         {
         // add to runqueue (no event is generated)
             scheduler.add_process(proc);
+            proc -> proc_time_stamp = current_time;
             CALL_SCHEDULER = true;
             break;
         }
@@ -390,21 +389,16 @@ void simulation(Scheduler scheduler){
                     }
                     continue;
                 }
-                //cout<< "next process: "<<current_running_process -> pid << endl;
+                cout<< "next process: "<<current_running_process -> pid << endl;
                 Event new_event(current_running_process, RUNNING);
-                //cout << "current time " << current_time<< endl;
+                cout << "time in pre state " << timeInPrevState << endl;
                 //cout << "event_Q size " << event_Q.size()<< endl;
                 new_event.event_time_stamp = current_time;
                 put_event(new_event);
                 // cout << "event_Q size after put event" << event_Q.size()<< endl;
-                // for(int i = 0; i < event_Q.size(); i++){
-                //     cout<< "in while loop "<<event_Q.at(i).evtproc -> pid<< endl;
-                // }
 
             }
         }
-
-
         //  evt = get_event() this should be at the  end of the while loop to fetch the next event.
         if (event_Q.empty()){
             break;
@@ -413,9 +407,9 @@ void simulation(Scheduler scheduler){
             evt = get_event();
             // cout << "event_size: " << event_Q.size() << endl;
             // cout<< "sth";
-            // cout <<"next_event " << evt.evtproc -> pid << " transition " << evt.transition << endl;
+            //cout <<"next_event " << evt.evtproc -> pid << " transition " << evt.transition << endl;
         }
-       
+    
         
     }
     print_doneQ(doneQ);
