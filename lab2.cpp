@@ -6,11 +6,11 @@
 #include <fstream>
 #include <vector>
 #include<algorithm>
-#include<tuple>
 #include <iterator>
 #include <typeinfo>
 #include <queue>
 #include <unistd.h>
+#include <list>
 
 using namespace std;
 //Global Variables
@@ -139,7 +139,7 @@ public:
     virtual void add_process(Process *p){
         run_Q.push(p);
     }
-    Process* get_next_process(){
+    virtual Process* get_next_process(){
         if (run_Q.empty()){
             return nullptr;
         }
@@ -158,11 +158,34 @@ public:
         run_Q.push(p);
     }
     Process* get_next_process(){
+        if (run_Q.empty()){
+            return nullptr;
+        }
         Process *p = run_Q.front();
         run_Q.pop();
         return p;
     }
 
+};
+
+class LCFS: public Scheduler
+{
+    list<Process*> run_Q;
+    public:
+        
+        void add_process(Process *p){
+            // usleep(500);
+            //cout << "this" << endl;
+            run_Q.push_front(p);
+        }
+        Process*  get_next_process(){
+            if (run_Q.empty()){
+                return nullptr;
+            }
+            Process *p = run_Q.front();
+            run_Q.pop_front();
+            return p;
+        }
 };
 vector <Event> event_Q;
 
@@ -183,6 +206,7 @@ void create_to_ready( vector <Process> create){
     }
 }
 Event get_event(){
+    
     Event evnt = event_Q.at(0);   
     event_Q.erase(event_Q.begin());
     return evnt;
@@ -227,18 +251,17 @@ void print_stats(vector<Process*> done, int last_event, int io_util){
 
      printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", last_event, 100.0 * cpu_util, (100.0 * io_util1) / last_event, turnaround_mean, cpu_waiting_mean, 100.0 * throughput); 
 }
-void simulation(Scheduler scheduler, int process_number){
+void simulation(Scheduler *scheduler, int process_number){
     vector <Process*> doneQ;
     Event evt = get_event();
     bool CALL_SCHEDULER = false;
     Process* current_running_process = nullptr;
     Process* blocked_proc = nullptr;
     int io_util = 0;
-    int last_event;
-    int io_finish_time;
+    int last_event = 0;
+    int io_finish_time = 0;
     
     while(event_Q.size() >= 0){
-        //cout<< "this" << endl;
         //cout <<"pid: " <<evt.evtproc ->pid;
         Process *proc = evt.evtproc;
         current_time = evt.event_time_stamp;
@@ -255,7 +278,7 @@ void simulation(Scheduler scheduler, int process_number){
             if (blocked_proc == proc){
                 blocked_proc = nullptr;
             }
-            scheduler.add_process(proc);
+            scheduler -> add_process(proc);
             proc -> proc_time_stamp = current_time;
             //cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             //cout <<"runQ: " << scheduler.run_Q.front() ->pid<< endl; 
@@ -300,7 +323,6 @@ void simulation(Scheduler scheduler, int process_number){
                 else{                  
                     Event new_event(proc, BLOCK);
                     new_event.event_time_stamp = current_time + cpu_burst;
-                    //proc -> proc_time_stamp = new_event.event_time_stamp;
                     put_event(new_event);
                     
                 }
@@ -351,7 +373,7 @@ void simulation(Scheduler scheduler, int process_number){
         case PREEMPT:
         {
         // add to runqueue (no event is generated)
-            scheduler.add_process(proc);
+            scheduler -> add_process(proc);
             proc -> proc_time_stamp = current_time;
             CALL_SCHEDULER = true;
             break;
@@ -392,10 +414,10 @@ void simulation(Scheduler scheduler, int process_number){
             }
             CALL_SCHEDULER = false;
             if (current_running_process == nullptr) {
-                //cout<< "sth" << endl;
-                current_running_process = scheduler.get_next_process();
-                //cout<< "sth " << endl;
-                //cout << "pid :" << current_running_process->pid;
+                // cout<< "this" << endl;
+                current_running_process = scheduler -> get_next_process();
+                // cout<< "that " << endl;
+                // cout << "pid :" << current_running_process->pid;
                 if (current_running_process == nullptr){
                     if (event_Q.empty()){
                         break;
@@ -526,8 +548,11 @@ int main(int argc, char** argv){
     // for(int i = 0; i < event_Q.size(); i++){
     //     cout<< event_Q.at(i).evtproc -> pid<< ": "<< event_Q.at(i).evtproc -> AT<< " " << event_Q.at(i).evtproc -> TC << " " <<  event_Q.at(i).evtproc -> CB<< " "<< endl;
     // }
-    Scheduler test;
-    current_time = 0; 
+    Scheduler *test = new LCFS();
+    // Scheduler *test = new FCFS();
+    // FCFS test();
+    current_time = 0;
+
     simulation(test, event.size());
     
     
