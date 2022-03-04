@@ -50,7 +50,8 @@ class Process{
         TT = FT - AT;
     }
     void set_IT(int pre){
-        IT = pre + IT; 
+        IT = pre + IT;
+        
     }
     // void set_CW(int pre){
     //     CW = CW + pre;
@@ -207,7 +208,7 @@ void print_doneQ(vector <Process*> doneQ){
                       doneQ.at(i) -> PRIO, doneQ.at(i) -> FT, doneQ.at(i) -> TT, doneQ.at(i) -> IT,  doneQ.at(i) -> CW);
     }
 }
-void print_stats(vector<Process*> done, int last_event){
+void print_stats(vector<Process*> done, int last_event, int io_util){
     //int cpu_sum;
     double it_sum;
     double turnaround_sum;
@@ -219,23 +220,22 @@ void print_stats(vector<Process*> done, int last_event){
         cpu_waiting_sum += (double) done.at(i) -> CW;
     }
     double cpu_util = (turnaround_sum - cpu_waiting_sum - it_sum) / (double)last_event;
-    double io_util = 0.0;
+    double io_util1 = (double) io_util;
     double turnaround_mean = turnaround_sum / (double)done.size();
     double cpu_waiting_mean = cpu_waiting_sum / (double)done.size();
     double throughput = (double)done.size()/ (double)last_event;
-    
-    
 
-
-     printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", last_event, 100.0 * cpu_util, 100.0 * io_util, turnaround_mean, cpu_waiting_mean, 100.0 * throughput); 
+     printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", last_event, 100.0 * cpu_util, (100.0 * io_util1) / last_event, turnaround_mean, cpu_waiting_mean, 100.0 * throughput); 
 }
 void simulation(Scheduler scheduler, int process_number){
     vector <Process*> doneQ;
     Event evt = get_event();
     bool CALL_SCHEDULER = false;
     Process* current_running_process = nullptr;
-    Process* process_blocked = nullptr;
+    Process* blocked_proc = nullptr;
+    int io_util = 0;
     int last_event;
+    int io_finish_time;
     
     while(event_Q.size() >= 0){
         //cout<< "this" << endl;
@@ -252,15 +252,17 @@ void simulation(Scheduler scheduler, int process_number){
             // must come from BLOCKED or from PREEMPTION
             // must add to run queue
             // conditional on whether something is run
+            if (blocked_proc == proc){
+                blocked_proc = nullptr;
+            }
             scheduler.add_process(proc);
             proc -> proc_time_stamp = current_time;
             //cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             //cout <<"runQ: " << scheduler.run_Q.front() ->pid<< endl; 
             if (current_running_process == nullptr){ 
                 CALL_SCHEDULER = true;
-            }
-        
-                                  
+                
+            }                                  
             break;
             
         }
@@ -269,14 +271,12 @@ void simulation(Scheduler scheduler, int process_number){
         {    
             //cout<< "thiiiiiiis" << endl;
             //current_running_process = proc;
-            //cout << (current_running_process == nullptr) << endl;
-            //cout <<   proc -> pid;
             
             int cpu_burst = myrandom(proc -> CB);
             proc -> set_CW(timeInPrevState);
             proc -> proc_time_stamp = current_time;
             
-           
+            
             //cout << "cpu_burst " << cpu_burst<< endl;
             if (cpu_burst > proc -> remainder){
                 cpu_burst = proc -> remainder;
@@ -287,8 +287,7 @@ void simulation(Scheduler scheduler, int process_number){
                 proc -> set_remainder(cpu_burst);
                 if (proc ->  remainder ==  0){
                     //cout<< "CALL_SCHEDULER " << CALL_SCHEDULER << endl;
-                    // cout<< "event_Q.size " <<  event_Q.size() << endl;
-                    //int flag = 0;
+                    
                     proc -> set_state(DONE);
                     proc -> set_FT();
                     proc -> set_TT();
@@ -313,10 +312,28 @@ void simulation(Scheduler scheduler, int process_number){
         case BLOCK:
         {
             //create an event for when process becomes READY again
+        
             current_running_process = nullptr;
+            
             int IO_burst = myrandom(proc -> IO);
             proc -> set_IT(IO_burst);
             proc -> proc_time_stamp = current_time;
+
+            if (blocked_proc != nullptr){
+                if (current_time + IO_burst > io_finish_time){
+                    //cout<< "this" << endl;                   
+                    io_util += IO_burst + current_time - io_finish_time; 
+                    io_finish_time = IO_burst + current_time;
+                    blocked_proc = proc;                               
+                }
+               
+            }
+            else{
+                io_finish_time = IO_burst + current_time;
+                blocked_proc = proc;
+                io_util += IO_burst;
+            }
+
             
             Event new_event(proc, READY);
             //cout << "io burst " << IO_burst << endl;
@@ -326,7 +343,6 @@ void simulation(Scheduler scheduler, int process_number){
             put_event(new_event);
             
             // cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
-            // cout << "that" << endl;
             //cout<< "that " << endl;
 
             CALL_SCHEDULER = true;
@@ -411,7 +427,7 @@ void simulation(Scheduler scheduler, int process_number){
         
     }
     print_doneQ(doneQ);
-    print_stats(doneQ, last_event);
+    print_stats(doneQ, last_event,io_util);
 }
 int main(int argc, char** argv){
  
