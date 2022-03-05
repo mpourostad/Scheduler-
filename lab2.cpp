@@ -187,6 +187,34 @@ class LCFS: public Scheduler
             return p;
         }
 };
+class SRTF: public Scheduler
+{
+    vector<Process*> run_Q;
+    public:
+        
+        void add_process(Process *p){
+            int flag = 0;
+            for (int i = 0; i < run_Q.size(); i++){
+                if (p -> remainder < run_Q.at(i) -> remainder){
+                    run_Q.insert (run_Q.begin() + i, p);
+                    flag = 1;
+                    break;
+                }
+            }
+            if (flag == 0){
+                run_Q.push_back(p);
+            }
+        }
+        Process* get_next_process(){
+            if (run_Q.empty()){
+                return nullptr;
+            }
+            Process* p = run_Q.at(0);
+            run_Q.erase(run_Q.begin());
+            return p;
+        }
+
+};
 vector <Event> event_Q;
 
 bool contains(int i){
@@ -548,8 +576,9 @@ int main(int argc, char** argv){
     // for(int i = 0; i < event_Q.size(); i++){
     //     cout<< event_Q.at(i).evtproc -> pid<< ": "<< event_Q.at(i).evtproc -> AT<< " " << event_Q.at(i).evtproc -> TC << " " <<  event_Q.at(i).evtproc -> CB<< " "<< endl;
     // }
-    Scheduler *test = new LCFS();
+    // Scheduler *test = new SRTF();
     // Scheduler *test = new FCFS();
+    Scheduler *test = new LCFS();
     // FCFS test();
     current_time = 0;
 
