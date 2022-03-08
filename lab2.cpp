@@ -45,6 +45,7 @@ class Process{
     int quantum;
     int remainder;
     int cpu_burst;
+    int duration;
     Process(vector <string>, int);
     void set_FT(){
         FT = TC + CW + IT + AT;
@@ -91,6 +92,7 @@ Process::Process(vector <string> proc, int prio){
     IO = stoi(proc.at(3));
     PRIO = myrandom(prio);
     dynamic_priority = PRIO - 1;
+    // preempt = 0;
     remainder = TC;
     cpu_burst = 0; 
 }
@@ -141,7 +143,7 @@ Event::Event(Process* p, int trans)
     evtproc = p;
     
 }
-
+vector <Event> event_Q;
 class Scheduler
 {
 
@@ -158,8 +160,18 @@ public:
         run_Q.pop();
         return p;
     }
-    bool test_preempt(Process *p, int curtime ){
-        return curtime == p -> quantum; 
+    // bool test_preempt(Process *p, int curtime ){
+    //     for (int i = 0; i < event_Q.size(); i++){
+    //         if (event_Q.at(i).event_time_stamp ==  curtime &&  event_Q.at(i).evtproc == p){
+                
+    //             return false;
+    //         }
+    //     }
+        
+    //     return true;
+    // }
+    virtual bool test_preempt(Process *p, int curtime){
+        return false;
     }
 };
 class FCFS: public Scheduler
@@ -242,7 +254,7 @@ class RR: public Scheduler
         return p;
     }
 };
-vector <Event> event_Q;
+
 class PRIO : public Scheduler
 {
     vector < queue<Process*> > active_queue;
@@ -250,7 +262,6 @@ class PRIO : public Scheduler
     
 
     public:
-    // int current_prio_level;
     PRIO(int);
     vector<queue <Process*> > run_Q;
     void add_process(Process* p){
@@ -296,12 +307,75 @@ PRIO::PRIO(int maxprio){
         queue<Process*> q;
         expired_queue.push_back(q);
     }
-    // for (int i = 0; i < event_Q.size(); i++){
-    //     active_queue.at(event_Q.at(i).evtproc -> dynamic_priority).push(event_Q.at(i).evtproc);
-
-    // }
 }
     
+
+class PREemptive_PRIO : public Scheduler
+{
+    vector < queue<Process*> > active_queue;
+    vector < queue<Process*> > expired_queue;
+    
+
+    public:
+    PREemptive_PRIO(int);
+    vector<queue <Process*> > run_Q;
+    void add_process(Process* p){
+        if (p -> dynamic_priority < 0){
+            p -> set_dynamic_prority();
+            expired_queue.at(p -> dynamic_priority).push(p);
+        }
+        else{
+            active_queue.at(p -> dynamic_priority).push(p);
+            for (int i = 0; i < expired_queue.size(); i++){
+                
+            }
+        }
+        
+    }
+    Process* get_next_process(){
+        
+        for (int i = active_queue.size() - 1; i >= 0; i--){
+            if (!active_queue.at(i).empty()){
+                Process *p = active_queue.at(i).front();
+                active_queue.at(i).pop();
+                return p;
+            }
+        }
+        active_queue.swap(expired_queue);
+        for (int i = active_queue.size() - 1; i >= 0; i--){
+            if (!active_queue.at(i).empty()){
+                Process *p = active_queue.at(i).front();
+                active_queue.at(i).pop();
+                return p;
+            }
+        }
+        return nullptr;
+
+    }
+    bool test_preempt(Process *p, int curtime ){
+        for (int i = 0; i < event_Q.size(); i++){
+            if (event_Q.at(i).event_time_stamp ==  curtime &&  event_Q.at(i).evtproc == p){
+                
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+
+};
+PREemptive_PRIO::PREemptive_PRIO(int maxprio){
+  
+    for (int i = 0; i < maxprio; i ++){
+        queue<Process*> q;
+        active_queue.push_back(q);
+    }
+    for (int i = 0; i < maxprio; i ++){
+        queue<Process*> q;
+        expired_queue.push_back(q);
+    }
+}
 
 
 
@@ -381,6 +455,7 @@ void simulation(Scheduler *scheduler, int process_number){
     int io_util = 0;
     int last_event = 0;
     int io_finish_time = 0;
+    int prev_time;
    
     
     while(event_Q.size() >= 0){
@@ -403,14 +478,56 @@ void simulation(Scheduler *scheduler, int process_number){
             if (blocked_proc == proc){
                 blocked_proc = nullptr;
             }
+            // cout <<  scheduler -> test_preempt(proc, current_time) << endl;
+            
             scheduler -> add_process(proc);
-            proc -> proc_time_stamp = current_time;
+            proc -> proc_time_stamp = current_time; 
+           
             cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
             // cout <<"runQ: " << scheduler -> run_Q.front() ->pid<< endl; 
             if (current_running_process == nullptr){ 
                 CALL_SCHEDULER = true;
                 
-            }                                  
+            }
+            else{
+                // 
+                // cout << "pid " << proc -> pid << " , dynamic_priority: " << proc -> dynamic_priority << endl;
+                // cout << "pid " << current_running_process -> pid << " , dynamic_priority: " << current_running_process -> dynamic_priority << endl;
+                if (proc -> dynamic_priority > current_running_process -> dynamic_priority){
+                     
+                    if (scheduler -> test_preempt(current_running_process, current_time)){
+                        //;
+                        // cout<< "thiiiiiiis" << endl;
+                        // cout << "current_running_process " << current_running_process -> pid << endl;
+                        for (int i = 0; i < event_Q.size(); i++){
+                            if (event_Q.at(i).evtproc == current_running_process){
+                                event_Q.erase(event_Q.begin() + i);
+                                break;
+                            }
+                        }
+                        int spent_cpu_burst = current_time - prev_time;
+                        // cout << "prev_time " << prev_time << endl;
+                        // cout << "duration " << current_running_process -> duration << endl;
+                        // cout << "cpu_burst before:  " << current_running_process -> cpu_burst << endl;
+                        current_running_process -> remainder += (current_running_process -> duration - spent_cpu_burst);
+                        current_running_process -> cpu_burst = current_running_process -> cpu_burst + current_running_process -> duration - spent_cpu_burst;
+                        // cout << "spent_cpu_burst " << spent_cpu_burst << endl;
+                        // cout << "cpu_burst after: " << current_running_process -> cpu_burst << endl;
+                        // cout << "remainder " << current_running_process -> remainder << endl;
+                        Event new_event(current_running_process, PREEMPT);
+                // cout <<  "quantum " << proc -> quantum << endl;
+                        new_event.event_time_stamp = current_time;
+                        
+                        put_event(new_event);
+                        current_running_process = nullptr;
+                        CALL_SCHEDULER = true;
+                    }
+                }
+                
+                
+            }
+             
+                                          
             break;
             
         }
@@ -419,7 +536,7 @@ void simulation(Scheduler *scheduler, int process_number){
         {    
             //cout<< "thiiiiiiis" << endl;
             //current_running_process = proc;
-           
+            prev_time = current_time;
             if (cpu_burst == 0){
                 
                 cpu_burst = myrandom(proc -> CB);
@@ -439,6 +556,7 @@ void simulation(Scheduler *scheduler, int process_number){
             if (proc -> quantum >= cpu_burst){
                 
                 proc -> proc_time_stamp = current_time + cpu_burst;
+                proc -> duration = cpu_burst;
                 proc -> set_remainder(cpu_burst);
                 
                 if (proc ->  remainder ==  0){
@@ -470,6 +588,7 @@ void simulation(Scheduler *scheduler, int process_number){
                 // cout << "cb: " << cpu_burst<< endl;
                 cpu_burst -= proc -> quantum;               
                 proc -> proc_time_stamp = current_time + proc -> quantum;
+                proc -> duration = proc -> quantum;
                 //cout << "pid: " <<  proc -> pid << "proc -> proc_time_stamp: " <<  proc -> proc_time_stamp << endl;
                 proc -> cpu_burst = cpu_burst;
                 proc -> set_remainder(proc -> quantum);               
@@ -530,6 +649,7 @@ void simulation(Scheduler *scheduler, int process_number){
             current_running_process = nullptr;
             proc -> dynamic_priority--;
             scheduler -> add_process(proc);
+             
             cout << "time: "<< current_time << " pcb: " << proc -> pid << " Running -> Ready cb = " << proc -> cpu_burst << " rem = " << proc -> remainder << " prio = "<< proc -> dynamic_priority << endl;
             
             proc -> proc_time_stamp = current_time;
@@ -605,7 +725,7 @@ void simulation(Scheduler *scheduler, int process_number){
             //cout <<"next_event " << evt.evtproc -> pid << " transition " << evt.transition << endl;
         }
     
-        
+        // prev_time = current_time;
     }
     print_doneQ(doneQ);
     print_stats(doneQ, last_event, io_util);
@@ -691,7 +811,7 @@ int main(int argc, char** argv){
         pcb -> CW = 0;
         pcb -> IT = 0;
         pcb -> TT = 0; 
-        pcb -> set_quantum(2);
+        pcb -> set_quantum(5);
         pcb -> pid = i;
         pcb -> proc_time_stamp = pcb -> AT;
         //create.push_back(*pcb);
@@ -700,26 +820,15 @@ int main(int argc, char** argv){
         event_Q.push_back(eve);
     }
     
-    // for (int i = 0; i < 4; i++){
-    //     while(!test -> run_Q[i].empty()){
-    //          cout << test -> run_Q.at[i].front();
-    //          test -> run_Q.at[i].pop();
-    //     }
-       
-    // }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    //create_to_ready(create);
-    //current_time = 500;
-    //create_to_ready(create);
-    // for(int i = 0; i < create.size(); i++){
-    //     cout<< create.at(i).pid<< ": "<<create.at(i).AT<<  endl;
-    // }
+  
     
     // Scheduler *test = new SRTF();
     // Scheduler *test = new FCFS();
     // Scheduler *test = new LCFS();
-    Scheduler *test = new RR();
-    // Scheduler *test = new PRIO(3);
+    // Scheduler *test = new RR();
+    Scheduler *test = new PRIO(3);
+    // Scheduler *test = new PREemptive_PRIO(5);
     // FCFS test();
     current_time = 0;
 
