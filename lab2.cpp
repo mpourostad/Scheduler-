@@ -768,7 +768,7 @@ int main(int argc, char** argv){
         //cout << "max_prio" << max_prio << endl;
     }
     else{
-        max_prio = 4;
+        max_prio = 3;
     }
     
 
