@@ -35,13 +35,11 @@ int myrandom(int burst) {
 
 class Process{
     public:
-    // PRIO must be added after IO
     int AT, TC, CB, IO, PRIO, FT, TT, IT, CW;
     int state;
     int pid;
     int proc_time_stamp;
     int dynamic_priority;
-    // int static_priority;
     int quantum;
     int remainder;
     int cpu_burst;
@@ -64,12 +62,6 @@ class Process{
         state = process_state;
     }
     void set_dynamic_prority(){
-        // if (dynamic_priority == -1){
-        //     dynamic_priority = PRIO - 1;
-        // }
-        // else{
-        //      dynamic_priority--;
-        // }
        dynamic_priority = PRIO - 1;
     }
     void set_quantum(int q){
@@ -79,9 +71,6 @@ class Process{
         remainder = remainder - burst;
         
     }
-    // void set_static_priority(){
-    //     static_priority = myrandom(PRIO);
-    // }
 
 };
 Process::Process(vector <string> proc, int prio){
@@ -92,7 +81,6 @@ Process::Process(vector <string> proc, int prio){
     IO = stoi(proc.at(3));
     PRIO = myrandom(prio);
     dynamic_priority = PRIO - 1;
-    // preempt = 0;
     remainder = TC;
     cpu_burst = 0; 
 }
@@ -115,29 +103,20 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option)
 class Event
 {
 private:
-    /* data */
+
 public:
     int transition;
-    // int old_state;
     int event_time_stamp;
     int pre_time;
-    // int duration;
-    
+
     Process* evtproc;
-    Event(Process*, int);
-
-    // void set_duration (){
-    //     duration = event_time_stamp - pre_time;
-    // }
-
-    
+    Event(Process*, int); 
 };
 
 
 Event::Event(Process* p, int trans)
 {
     pre_time = 0;
-    // duration = 0;
     transition = trans;
     event_time_stamp = current_time;
     evtproc = p;
@@ -160,16 +139,6 @@ public:
         run_Q.pop();
         return p;
     }
-    // bool test_preempt(Process *p, int curtime ){
-    //     for (int i = 0; i < event_Q.size(); i++){
-    //         if (event_Q.at(i).event_time_stamp ==  curtime &&  event_Q.at(i).evtproc == p){
-                
-    //             return false;
-    //         }
-    //     }
-        
-    //     return true;
-    // }
     virtual bool test_preempt(Process *p, int curtime){
         return false;
     }
@@ -478,27 +447,21 @@ void simulation(Scheduler *scheduler, int process_number){
             if (blocked_proc == proc){
                 blocked_proc = nullptr;
             }
-            // cout <<  scheduler -> test_preempt(proc, current_time) << endl;
             
             scheduler -> add_process(proc);
             proc -> proc_time_stamp = current_time; 
            
-            cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
-            // cout <<"runQ: " << scheduler -> run_Q.front() ->pid<< endl; 
+            // cout << "time: "<< current_time << " pcb: " << proc -> pid << " block -> Ready " << endl;
+    
             if (current_running_process == nullptr){ 
                 CALL_SCHEDULER = true;
                 
             }
             else{
-                // 
-                // cout << "pid " << proc -> pid << " , dynamic_priority: " << proc -> dynamic_priority << endl;
-                // cout << "pid " << current_running_process -> pid << " , dynamic_priority: " << current_running_process -> dynamic_priority << endl;
+            
                 if (proc -> dynamic_priority > current_running_process -> dynamic_priority){
                      
                     if (scheduler -> test_preempt(current_running_process, current_time)){
-                        //;
-                        // cout<< "thiiiiiiis" << endl;
-                        // cout << "current_running_process " << current_running_process -> pid << endl;
                         for (int i = 0; i < event_Q.size(); i++){
                             if (event_Q.at(i).evtproc == current_running_process){
                                 event_Q.erase(event_Q.begin() + i);
@@ -506,16 +469,9 @@ void simulation(Scheduler *scheduler, int process_number){
                             }
                         }
                         int spent_cpu_burst = current_time - prev_time;
-                        // cout << "prev_time " << prev_time << endl;
-                        // cout << "duration " << current_running_process -> duration << endl;
-                        // cout << "cpu_burst before:  " << current_running_process -> cpu_burst << endl;
                         current_running_process -> remainder += (current_running_process -> duration - spent_cpu_burst);
                         current_running_process -> cpu_burst = current_running_process -> cpu_burst + current_running_process -> duration - spent_cpu_burst;
-                        // cout << "spent_cpu_burst " << spent_cpu_burst << endl;
-                        // cout << "cpu_burst after: " << current_running_process -> cpu_burst << endl;
-                        // cout << "remainder " << current_running_process -> remainder << endl;
                         Event new_event(current_running_process, PREEMPT);
-                // cout <<  "quantum " << proc -> quantum << endl;
                         new_event.event_time_stamp = current_time;
                         
                         put_event(new_event);
@@ -534,14 +490,10 @@ void simulation(Scheduler *scheduler, int process_number){
         case RUNNING:
             // create event for either preemption or blocking
         {    
-            //cout<< "thiiiiiiis" << endl;
-            //current_running_process = proc;
             prev_time = current_time;
             if (cpu_burst == 0){
                 
                 cpu_burst = myrandom(proc -> CB);
-                // proc -> cpu_burst = cpu_burst;
-                // update_cpu_burst(cpu_burst);
             }
             if (cpu_burst > proc -> remainder){
                 cpu_burst = proc -> remainder;
@@ -549,11 +501,8 @@ void simulation(Scheduler *scheduler, int process_number){
             
             proc -> set_CW(timeInPrevState);
            
-            cout << "time: "<< current_time << " pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder <<" prio = "<< proc -> dynamic_priority<< endl;
-           
-            //cout << "cpu_burst " << cpu_burst<< endl;
-            
-            if (proc -> quantum >= cpu_burst){
+            // cout << "time: "<< current_time << " pcb: " << proc -> pid << " Ready -> Running cb = " << cpu_burst << " rem = " << proc -> remainder <<" prio = "<< proc -> dynamic_priority<< endl;
+                if (proc -> quantum >= cpu_burst){
                 
                 proc -> proc_time_stamp = current_time + cpu_burst;
                 proc -> duration = cpu_burst;
@@ -581,26 +530,17 @@ void simulation(Scheduler *scheduler, int process_number){
                 
             }
             else{
-                 
-                
-                // cout << "time: "<< current_time << " pcb: " << proc -> pid << " Ready -> Running cb = " << proc -> quantum << " rem = " << proc -> remainder << endl;
-                // cout << "I'm here " << endl;
-                // cout << "cb: " << cpu_burst<< endl;
                 cpu_burst -= proc -> quantum;               
                 proc -> proc_time_stamp = current_time + proc -> quantum;
                 proc -> duration = proc -> quantum;
-                //cout << "pid: " <<  proc -> pid << "proc -> proc_time_stamp: " <<  proc -> proc_time_stamp << endl;
                 proc -> cpu_burst = cpu_burst;
                 proc -> set_remainder(proc -> quantum);               
                 Event new_event(proc, PREEMPT);
-                // cout <<  "quantum " << proc -> quantum << endl;
                 new_event.event_time_stamp = current_time + proc -> quantum;
                 
                 put_event(new_event);
             
-            }
-
-           
+            }          
             break;
         }
         case BLOCK:
@@ -614,8 +554,7 @@ void simulation(Scheduler *scheduler, int process_number){
             proc -> proc_time_stamp = current_time;
 
             if (blocked_proc != nullptr){
-                if (current_time + IO_burst > io_finish_time){
-                    //cout<< "this" << endl;                   
+                if (current_time + IO_burst > io_finish_time){                
                     io_util += IO_burst + current_time - io_finish_time; 
                     io_finish_time = IO_burst + current_time;
                     blocked_proc = proc;                               
@@ -630,15 +569,10 @@ void simulation(Scheduler *scheduler, int process_number){
 
             
             Event new_event(proc, READY);
-            //cout << "io burst " << IO_burst << endl;
             new_event.event_time_stamp = current_time + IO_burst;
-            
-            // new_event.old_state = BLOCK;
             put_event(new_event);
             
-            cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
-            //cout<< "that " << endl;
-
+            // cout << "time: "<< current_time << " pcb: " << proc -> pid<<  " Running ->  Block ib " << IO_burst << " rem " << proc->remainder<< " "<< endl;
             CALL_SCHEDULER = true;
             break;
         }
@@ -650,7 +584,7 @@ void simulation(Scheduler *scheduler, int process_number){
             proc -> dynamic_priority--;
             scheduler -> add_process(proc);
              
-            cout << "time: "<< current_time << " pcb: " << proc -> pid << " Running -> Ready cb = " << proc -> cpu_burst << " rem = " << proc -> remainder << " prio = "<< proc -> dynamic_priority << endl;
+            // cout << "time: "<< current_time << " pcb: " << proc -> pid << " Running -> Ready cb = " << proc -> cpu_burst << " rem = " << proc -> remainder << " prio = "<< proc -> dynamic_priority << endl;
             
             proc -> proc_time_stamp = current_time;
             CALL_SCHEDULER = true;
@@ -659,14 +593,10 @@ void simulation(Scheduler *scheduler, int process_number){
         case DONE:
         {
             int flag = 0;
-            //cout << "doneQ.size() " << doneQ.size() << endl;
             if (doneQ.size() == process_number - 1){
                 last_event = proc-> FT;
-                //cout << "last_event " << last_event << endl;
             }
             for (int i = 0; i < doneQ.size(); i++){
-                
-                //cout << "pid " << proc -> pid << endl;
                 if (doneQ.at(i) -> pid > proc -> pid ){
                     doneQ.insert(doneQ.begin() + i, proc);
                     flag = 1;                    
@@ -692,40 +622,28 @@ void simulation(Scheduler *scheduler, int process_number){
             }
             CALL_SCHEDULER = false;
             if (current_running_process == nullptr) {
-                // cout<< "this" << endl;
                 current_running_process = scheduler -> get_next_process();
-                // cout<< "that " << endl;
-                // cout << "pid this :" << current_running_process->pid << endl;
                 if (current_running_process == nullptr){
                     if (event_Q.empty()){
                         break;
                     }
                     if (!event_Q.empty()){
                         evt = get_event();
-                        //cout <<"next_event " << evt.evtproc -> pid << "transition " << evt.transition << endl;
                     }
                     continue;
                 }
-                // cout<< "next process: "<<current_running_process -> pid << endl;
                 Event new_event(current_running_process, RUNNING);
-                //cout << "event_Q size " << event_Q.size()<< endl;
-                //new_event.event_time_stamp = current_time;
                 new_event.event_time_stamp = current_time;
                 put_event(new_event);
-                // cout << "event_Q size after put event" << event_Q.size()<< endl;
 
             }
         }
-        //  evt = get_event() this should be at the  end of the while loop to fetch the next event.
         if (event_Q.empty()){
             break;
         }
         if (!event_Q.empty()){
             evt = get_event();
-            //cout <<"next_event " << evt.evtproc -> pid << " transition " << evt.transition << endl;
         }
-    
-        // prev_time = current_time;
     }
     print_doneQ(doneQ);
     print_stats(doneQ, last_event, io_util);
@@ -735,23 +653,24 @@ int main(int argc, char** argv){
     queue<Process*> process_Q; 
     ifstream f;
     vector<string>  str; 
-    string filename_input = argv[1];
+    string filename_input = argv[2];
     f.open(filename_input);
     copy(istream_iterator<string>(f), istream_iterator<string>(), back_inserter(str));
     int len = str.size();
     vector <string> temp;
     vector < vector <string > > event;
+    Scheduler *scheduler;
+    int max_prio = 4;
+    int quantum = 10000;
    
 
     
    
     int count = 0;
     char * priority;
-    int max_prio;
 
     ifstream r;
-    string filename_rand = argv[2];
-    // cout<< "argv[2] " << argv[2]<< endl;
+    string filename_rand = argv[3];
     r.open(filename_rand);
     copy(istream_iterator<string>(r),
     istream_iterator<string>(),
@@ -761,18 +680,87 @@ int main(int argc, char** argv){
     r.close();
     
     ofs = 0;
-    //determining priority
-    if (cmdOptionExists(argv, argv+argc, "-p")){
-        priority = getCmdOption(argv, argv + argc, "-p");
-        max_prio = strtol(priority, NULL, 10);
-        //cout << "max_prio" << max_prio << endl;
-    }
-    else{
-        max_prio = 3;
-    }
-    
+        char *get_scheduler = argv[1];
+        string schedule(get_scheduler);
+       
+        if (schedule[2] == 'F'){
+            cout << "FCFS" << endl;
+            scheduler = new FCFS();
+        }
+        else if (schedule[2] == 'L'){
+            cout << "LCFS" << endl;
+            scheduler = new LCFS();
+        }
+        else if (schedule[2] == 'S'){
+            cout << "SRTF" << endl;
+            scheduler = new SRTF();
+        }
+        else if (schedule[2] == 'R'){
+            
+            string q;
+            int i = 3;
+            while (i < schedule.size() && schedule[i] != ':'){
 
-    // building a 2d vector, each vector in event is a line in the input file. 
+                q.push_back(schedule[i]);
+                
+                i++;
+            }
+            quantum = stoi(q);
+            cout << "RR " << quantum << endl;
+            scheduler = new RR();
+        }
+        else if (schedule[2] == 'P'){
+            
+            string q;
+            int i = 3;
+            while (i < schedule.size() && schedule[i] != ':'){
+
+                q.push_back(schedule[i]);
+                
+                i++;
+            }
+            quantum = stoi(q);
+            if (schedule[i] == ':'){
+                i++;
+                string get_maxprio;
+                while (i < schedule.size()){
+
+                    get_maxprio.push_back(schedule[i]);
+                    
+                    i++;
+                }
+                max_prio = stoi(get_maxprio);
+                
+            }
+            cout << "PRIO " << quantum << endl;
+            scheduler = new PRIO(max_prio);
+        }
+        else if (schedule[2] == 'E'){
+            
+            string q;
+            int i = 3;
+            while (i < schedule.size() && schedule[i] != ':'){
+
+                q.push_back(schedule[i]);
+                
+                i++;
+            }
+            quantum = stoi(q);
+            if (schedule[i] == ':'){
+                i++;
+                string get_maxprio;
+                while (i < schedule.size()){
+
+                    get_maxprio.push_back(schedule[i]);
+                    
+                    i++;
+                }
+                max_prio = stoi(get_maxprio);
+                
+            }
+            cout << "PREPRIO " << quantum << endl;
+            scheduler = new PREemptive_PRIO(max_prio);
+        }
     for(int i = 0; i < str.size(); i++){
         for(int j = 0; j < 4; j++){
             if (i % 4 == 0){
@@ -786,24 +774,6 @@ int main(int argc, char** argv){
         }       
     }
 
-
-    //******************************************************** original
-    // for (int i = 0; i < event.size(); i++){
-        
-    //     Process pcb (event.at(i), max_prio);
-    //     pcb.FT = 0; 
-    //     pcb.CW = 0;
-    //     pcb.IT = 0;
-    //     pcb.TT = 0; 
-    //     pcb.set_quantum(10000);
-    //     pcb.pid = i;
-    //     pcb.proc_time_stamp = pcb.AT;
-    //     create.push_back(pcb);
-    // }
-    //************************************************************
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++trying dynamic allocation
-
-    
     for (int i = 0; i < event.size(); i++){
         Process *pcb;
         pcb =  new Process(event.at(i), max_prio);
@@ -811,28 +781,16 @@ int main(int argc, char** argv){
         pcb -> CW = 0;
         pcb -> IT = 0;
         pcb -> TT = 0; 
-        pcb -> set_quantum(5);
+        pcb -> set_quantum(quantum);
         pcb -> pid = i;
         pcb -> proc_time_stamp = pcb -> AT;
-        //create.push_back(*pcb);
         Event eve(pcb, READY);
         eve.event_time_stamp = pcb -> AT;
         event_Q.push_back(eve);
     }
-    
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  
-    
-    // Scheduler *test = new SRTF();
-    // Scheduler *test = new FCFS();
-    // Scheduler *test = new LCFS();
-    // Scheduler *test = new RR();
-    Scheduler *test = new PRIO(3);
-    // Scheduler *test = new PREemptive_PRIO(5);
-    // FCFS test();
     current_time = 0;
 
-    simulation(test, event.size());
+    simulation(scheduler, event.size());
     
     
     return 0;
