@@ -648,7 +648,7 @@ int main(int argc, char** argv){
         //cout << "max_prio" << max_prio << endl;
     }
     else{
-        max_prio = 4;
+        max_prio = 3;
     }
     
 
@@ -691,7 +691,7 @@ int main(int argc, char** argv){
         pcb -> CW = 0;
         pcb -> IT = 0;
         pcb -> TT = 0; 
-        pcb -> set_quantum(2);
+        pcb -> set_quantum(5);
         pcb -> pid = i;
         pcb -> proc_time_stamp = pcb -> AT;
         //create.push_back(*pcb);
@@ -718,8 +718,8 @@ int main(int argc, char** argv){
     // Scheduler *test = new SRTF();
     // Scheduler *test = new FCFS();
     // Scheduler *test = new LCFS();
-    Scheduler *test = new RR();
-    // Scheduler *test = new PRIO(3);
+    // Scheduler *test = new RR();
+    Scheduler *test = new PRIO(3);
     // FCFS test();
     current_time = 0;
 
