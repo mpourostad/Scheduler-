@@ -346,24 +346,6 @@ PREemptive_PRIO::PREemptive_PRIO(int maxprio){
     }
 }
 
-
-
-bool contains(int i){
-    for (int j = 0; j < event_Q.size(); j++){
-        if (event_Q.at(j).evtproc -> pid == i){
-            return true;
-        }
-    }
-    return false;
-}
-// unused function
-void create_to_ready( vector <Process> create){
-    for (int i = 0; i < create.size();  i++){
-            Event eve(&create.at(i), READY);
-            eve.event_time_stamp = create.at(i).AT;
-            event_Q.push_back(eve);
-    }
-}
 Event get_event(){
     
     Event evnt = event_Q.at(0);   
@@ -649,11 +631,53 @@ void simulation(Scheduler *scheduler, int process_number){
     print_stats(doneQ, last_event, io_util);
 }
 int main(int argc, char** argv){
- 
+
+  bool trace = false;
+  bool verbose = false;
+  bool p = false;
+  bool e =  false;
+  bool t =  false;
+  int index;
+  int c;
+  char *get_scheduler = NULL;
+
+  opterr = 0;
+ while ((c = getopt (argc, argv, "tevps:")) != -1)
+    switch (c)
+      {
+      case 's':
+        get_scheduler = optarg;
+        break;
+      case 'v':
+        verbose = true;
+        break;
+      case 't':
+        t = true;
+        break;
+      case 'e':
+        e = true;
+        break;
+      case 'p':
+        p = true;
+        break;
+      default:
+        abort ();
+      }
+    
+    string filename_input;
+    string filename_rand; 
+    for (int i = optind; i < argc; i++){
+        string arg(argv[i]);
+        if (!arg.find("input")){
+            filename_input = arg;
+        }
+        else if (!arg.find("./rfile")){
+            filename_rand = arg;
+        }
+    }
     queue<Process*> process_Q; 
     ifstream f;
     vector<string>  str; 
-    string filename_input = argv[2];
     f.open(filename_input);
     copy(istream_iterator<string>(f), istream_iterator<string>(), back_inserter(str));
     int len = str.size();
@@ -670,7 +694,6 @@ int main(int argc, char** argv){
     char * priority;
 
     ifstream r;
-    string filename_rand = argv[3];
     r.open(filename_rand);
     copy(istream_iterator<string>(r),
     istream_iterator<string>(),
@@ -680,25 +703,26 @@ int main(int argc, char** argv){
     r.close();
     
     ofs = 0;
-        char *get_scheduler = argv[1];
+  
+        // char *get_scheduler = argv[1];
         string schedule(get_scheduler);
-       
-        if (schedule[2] == 'F'){
+    //    cout << schedule << endl;
+        if (schedule[0] == 'F'){
             cout << "FCFS" << endl;
             scheduler = new FCFS();
         }
-        else if (schedule[2] == 'L'){
+        else if (schedule[0] == 'L'){
             cout << "LCFS" << endl;
             scheduler = new LCFS();
         }
-        else if (schedule[2] == 'S'){
+        else if (schedule[0] == 'S'){
             cout << "SRTF" << endl;
             scheduler = new SRTF();
         }
-        else if (schedule[2] == 'R'){
+        else if (schedule[0] == 'R'){
             
             string q;
-            int i = 3;
+            int i = 1;
             while (i < schedule.size() && schedule[i] != ':'){
 
                 q.push_back(schedule[i]);
@@ -709,10 +733,10 @@ int main(int argc, char** argv){
             cout << "RR " << quantum << endl;
             scheduler = new RR();
         }
-        else if (schedule[2] == 'P'){
+        else if (schedule[0] == 'P'){
             
             string q;
-            int i = 3;
+            int i = 1;
             while (i < schedule.size() && schedule[i] != ':'){
 
                 q.push_back(schedule[i]);
@@ -735,10 +759,10 @@ int main(int argc, char** argv){
             cout << "PRIO " << quantum << endl;
             scheduler = new PRIO(max_prio);
         }
-        else if (schedule[2] == 'E'){
+        else if (schedule[0] == 'E'){
             
             string q;
-            int i = 3;
+            int i = 1;
             while (i < schedule.size() && schedule[i] != ':'){
 
                 q.push_back(schedule[i]);
@@ -773,7 +797,6 @@ int main(int argc, char** argv){
             temp.clear();
         }       
     }
-
     for (int i = 0; i < event.size(); i++){
         Process *pcb;
         pcb =  new Process(event.at(i), max_prio);
