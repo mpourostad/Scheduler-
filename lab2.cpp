@@ -23,12 +23,10 @@ typedef enum { READY, RUNNING , BLOCK, PREEMPT, DONE  } process_state;
 
 
 int myrandom(int burst) {
-    if (ofs > stoi(randvals[0]) ){
-        //cout<< "I'm here" << endl;
+    if (ofs >= stoi(randvals[0]) ){
         ofs = 0;
     }
     ofs++;
-    //cout << 1 + (stoi(randvals[ofs]) % burst);
     return 1 + (stoi(randvals[ofs]) % burst); 
     
 }
@@ -410,10 +408,8 @@ void simulation(Scheduler *scheduler, int process_number){
    
     
     while(event_Q.size() >= 0){
-        //cout <<"pid: " <<evt.evtproc ->pid;
         Process *proc = evt.evtproc;
         current_time = evt.event_time_stamp;
-        //cout<< "current_time " << current_time<< endl;
         int transition = evt.transition;
         int timeInPrevState = current_time - proc -> proc_time_stamp;
         int cpu_burst = proc -> cpu_burst;
@@ -598,7 +594,6 @@ void simulation(Scheduler *scheduler, int process_number){
         }
         if (CALL_SCHEDULER){
             if (!event_Q.empty() && event_Q.at(0).event_time_stamp == current_time){
-                // cout << "I'm here"<< endl;
                 evt = get_event();
                 continue;  
             }
@@ -671,7 +666,7 @@ int main(int argc, char** argv){
         if (!arg.find("input")){
             filename_input = arg;
         }
-        else if (!arg.find("./rfile")){
+        else {
             filename_rand = arg;
         }
     }
@@ -685,11 +680,7 @@ int main(int argc, char** argv){
     vector < vector <string > > event;
     Scheduler *scheduler;
     int max_prio = 4;
-    int quantum = 10000;
-   
-
-    
-   
+    int quantum = 10000;   
     int count = 0;
     char * priority;
 
@@ -812,9 +803,6 @@ int main(int argc, char** argv){
         event_Q.push_back(eve);
     }
     current_time = 0;
-
     simulation(scheduler, event.size());
-    
-    
     return 0;
 }
